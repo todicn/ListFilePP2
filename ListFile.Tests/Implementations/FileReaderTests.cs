@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using ListFile.Core.Configuration;
 using ListFile.Core.Implementations;
 using ListFile.Core.Interfaces;
+using ListFile.Core.Services;
 using Xunit;
 
 namespace ListFile.Tests.Implementations;
@@ -22,7 +23,16 @@ public class FileReaderTests : IDisposable
             EnablePerformanceLogging = false,
             SmallFileThresholdBytes = 1024 // 1KB for tests
         });
-        fileReader = new FileReader(options);
+        
+        // Create strategies
+        var strategies = new List<IFileReadingStrategy>
+        {
+            new SmallFileReadingStrategy(),
+            new LargeFileReadingStrategy()
+        };
+        
+        var strategySelector = new FileReadingStrategySelector(strategies);
+        fileReader = new FileReader(options, strategySelector);
     }
 
     public void Dispose()
@@ -47,8 +57,26 @@ public class FileReaderTests : IDisposable
     [Fact]
     public void Constructor_NullOptions_ThrowsArgumentNullException()
     {
+        // Arrange
+        var strategies = new List<IFileReadingStrategy>
+        {
+            new SmallFileReadingStrategy(),
+            new LargeFileReadingStrategy()
+        };
+        var strategySelector = new FileReadingStrategySelector(strategies);
+
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new FileReader(null!));
+        Assert.Throws<ArgumentNullException>(() => new FileReader(null!, strategySelector));
+    }
+
+    [Fact]
+    public void Constructor_NullStrategySelector_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var options = Options.Create(new FileReaderOptions());
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => new FileReader(options, null!));
     }
 
     [Fact]

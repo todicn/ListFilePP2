@@ -32,6 +32,13 @@ public static class ServiceCollectionExtensions
             services.Configure<FileReaderOptions>(options => { });
         }
 
+        // Register file reading strategies
+        services.AddScoped<IFileReadingStrategy, SmallFileReadingStrategy>();
+        services.AddScoped<IFileReadingStrategy, LargeFileReadingStrategy>();
+        
+        // Register strategy selector
+        services.AddScoped<FileReadingStrategySelector>();
+
         // Register the file reader service
         services.AddScoped<IFileReader, FileReader>();
 
@@ -52,6 +59,13 @@ public static class ServiceCollectionExtensions
     {
         // Bind configuration
         services.Configure<FileReaderOptions>(configuration.GetSection(sectionName));
+
+        // Register file reading strategies
+        services.AddScoped<IFileReadingStrategy, SmallFileReadingStrategy>();
+        services.AddScoped<IFileReadingStrategy, LargeFileReadingStrategy>();
+        
+        // Register strategy selector
+        services.AddScoped<FileReadingStrategySelector>();
 
         // Register the file reader service
         services.AddScoped<IFileReader, FileReader>();
