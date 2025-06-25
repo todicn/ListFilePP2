@@ -8,7 +8,7 @@ on:
 
 env:
   DOTNET_VERSION: '8.0.x'
-  SOLUTION_PATH: 'RateLimiterPP.sln'
+  SOLUTION_PATH: 'ListFilePP2.sln'
 
 jobs:
   build-and-test:
@@ -25,7 +25,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         
     - name: Cache NuGet packages
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.nuget/packages
         key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
@@ -42,14 +42,14 @@ jobs:
       run: dotnet test ${{ env.SOLUTION_PATH }} --no-build --configuration Release --collect:"XPlat Code Coverage" --logger trx --results-directory TestResults/
       
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-results
         path: TestResults/
         
     - name: Upload code coverage
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       if: success()
       with:
         directory: TestResults/
@@ -107,7 +107,7 @@ jobs:
       
     - name: Run performance tests
       run: |
-        cd RateLimiter.ConsoleApp
+        cd ListFile.Demo
         timeout 30s dotnet run --configuration Release || true
         echo "Performance test completed"
 
