@@ -11,8 +11,10 @@ public class FileReaderOptions
     public const string SectionName = "FileReader";
 
     /// <summary>
-    /// Gets or sets a value indicating whether to enable performance logging.
+    /// Gets or sets a value indicating whether to enable diagnostic observers.
+    /// This is now handled through the observer pattern instead of direct logging.
     /// </summary>
+    [Obsolete("Use diagnostic observers instead. Configure observers using ConfigureDiagnosticObservers extension method.")]
     public bool EnablePerformanceLogging { get; set; } = false;
 
     /// <summary>

@@ -20,7 +20,6 @@ public class FileReaderTests : IDisposable
         testFiles = new List<string>();
         var options = Options.Create(new FileReaderOptions
         {
-            EnablePerformanceLogging = false,
             SmallFileThresholdBytes = 1024 // 1KB for tests
         });
         

@@ -11,6 +11,7 @@ A high-performance .NET 8 library for reading the last N lines from files effici
 - **Configurable**: Flexible options for file size thresholds and buffer sizes
 - **Async Support**: Both synchronous and asynchronous APIs
 - **Event-Driven**: File change notifications with detailed event information
+- **Observer Pattern Diagnostics**: Flexible diagnostic system using observer pattern for performance monitoring and event tracking
 - **Dependency Injection**: Built-in support for Microsoft.Extensions.DependencyInjection
 - **Well-Tested**: Comprehensive unit tests with edge case coverage
 
@@ -56,10 +57,16 @@ var services = new ServiceCollection();
 services.AddFileReading(options =>
 {
     options.SmallFileThresholdBytes = 1024 * 1024; // 1MB
-    options.EnablePerformanceLogging = true;
 });
 
 var serviceProvider = services.BuildServiceProvider();
+
+// Configure diagnostic observers for performance monitoring and event tracking
+serviceProvider.ConfigureDiagnosticObservers(
+    enablePerformanceObserver: true,
+    enableMonitoringObserver: true,
+    enableConsoleOutput: true);
+
 var fileReader = serviceProvider.GetRequiredService<IFileReader>();
 var fileMonitor = serviceProvider.GetRequiredService<IFileMonitor>();
 
@@ -98,6 +105,89 @@ fileMonitor.StopMonitoring();
 fileMonitor.Dispose();
 ```
 
+## Diagnostic Observers
+
+The library uses the Observer pattern for diagnostics, allowing you to monitor file operations, performance metrics, and monitoring events in a flexible and extensible way.
+
+### Available Observers
+
+#### PerformanceDiagnosticObserver
+Tracks performance metrics for file operations:
+- File operation start/completion events
+- Execution time measurements
+- Strategy selection notifications
+- Console output and structured logging
+
+#### MonitoringDiagnosticObserver  
+Tracks file monitoring statistics:
+- Monitoring start/stop events
+- File change detection events
+- Statistics collection (change counts, durations)
+- Error tracking
+
+### Configuring Observers
+
+```csharp
+using Microsoft.Extensions.DependencyInjection;
+using ListFile.Core.Services;
+
+var services = new ServiceCollection();
+services.AddFileReading();
+var serviceProvider = services.BuildServiceProvider();
+
+// Configure diagnostic observers
+serviceProvider.ConfigureDiagnosticObservers(
+    enablePerformanceObserver: true,    // Enable performance tracking
+    enableMonitoringObserver: true,     // Enable monitoring statistics  
+    enableConsoleOutput: true           // Enable console output for performance
+);
+```
+
+### Custom Observers
+
+You can create custom observers by implementing `IDiagnosticObserver`:
+
+```csharp
+public class CustomDiagnosticObserver : IDiagnosticObserver
+{
+    public void OnDiagnosticEvent(IDiagnosticEvent diagnosticEvent)
+    {
+        switch (diagnosticEvent.EventType)
+        {
+            case DiagnosticEventType.FileOperationCompleted:
+                // Handle file operation completion
+                var elapsedMs = diagnosticEvent.Data["ElapsedMilliseconds"];
+                Console.WriteLine($"Operation took {elapsedMs}ms");
+                break;
+                
+            case DiagnosticEventType.FileChangeDetected:
+                // Handle file change detection
+                var changeType = diagnosticEvent.Data["ChangeType"];
+                Console.WriteLine($"File changed: {changeType}");
+                break;
+        }
+    }
+}
+
+// Register and attach custom observer
+services.AddScoped<CustomDiagnosticObserver>();
+var customObserver = serviceProvider.GetService<CustomDiagnosticObserver>();
+var diagnosticSubject = serviceProvider.GetService<IDiagnosticSubject>();
+diagnosticSubject.Attach(customObserver);
+```
+
+### Diagnostic Event Types
+
+- `FileOperationStarted` - File operation begins
+- `FileOperationCompleted` - File operation completes successfully  
+- `FileOperationFailed` - File operation fails
+- `PerformanceMetrics` - Performance metrics collected
+- `MonitoringStarted` - File monitoring begins
+- `MonitoringStopped` - File monitoring ends
+- `FileChangeDetected` - File change detected during monitoring
+- `StrategySelected` - Reading strategy selected
+- `Error` - Error occurred during operation
+
 ## Configuration Options
 
 The `FileReaderOptions` class provides several configuration options:
@@ -112,9 +202,6 @@ public class FileReaderOptions
     
     // Buffer size for reading large files (default: 4KB)
     public int BufferSize { get; set; } = 4096;
-    
-    // Enable performance logging (default: false)
-    public bool EnablePerformanceLogging { get; set; } = false;
     
     // Default encoding for reading files (default: UTF-8)
     public string DefaultEncoding { get; set; } = "UTF-8";
@@ -258,7 +345,6 @@ Console.ReadKey();
 {
   "FileReader": {
     "SmallFileThresholdBytes": 1048576,
-    "EnablePerformanceLogging": true,
     "BufferSize": 8192
   }
 }

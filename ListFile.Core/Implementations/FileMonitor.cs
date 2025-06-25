@@ -12,6 +12,7 @@ public class FileMonitor : IFileMonitor
 {
     private readonly IFileReader fileReader;
     private readonly ILogger<FileMonitor>? logger;
+    private readonly IDiagnosticSubject? diagnosticSubject;
     private FileSystemWatcher? fileWatcher;
     private string? monitoredFilePath;
     private int lineCount;
@@ -23,10 +24,12 @@ public class FileMonitor : IFileMonitor
     /// </summary>
     /// <param name="fileReader">The file reader to use for reading file content.</param>
     /// <param name="logger">Optional logger for monitoring events.</param>
-    public FileMonitor(IFileReader fileReader, ILogger<FileMonitor>? logger = null)
+    /// <param name="diagnosticSubject">Optional diagnostic subject for observer notifications.</param>
+    public FileMonitor(IFileReader fileReader, ILogger<FileMonitor>? logger = null, IDiagnosticSubject? diagnosticSubject = null)
     {
         this.fileReader = fileReader ?? throw new ArgumentNullException(nameof(fileReader));
         this.logger = logger;
+        this.diagnosticSubject = diagnosticSubject;
     }
 
     /// <inheritdoc />
@@ -86,6 +89,9 @@ public class FileMonitor : IFileMonitor
             IsMonitoring = true;
 
             logger?.LogInformation("Started monitoring file: {FilePath}", filePath);
+            
+            // Notify monitoring started
+            diagnosticSubject?.Notify(DiagnosticEvent.MonitoringStarted("FileMonitor", filePath, lineCount));
 
             // Read initial content
             try
@@ -123,6 +129,9 @@ public class FileMonitor : IFileMonitor
             if (previousPath != null)
             {
                 logger?.LogInformation("Stopped monitoring file: {FilePath}", previousPath);
+                
+                // Notify monitoring stopped
+                diagnosticSubject?.Notify(DiagnosticEvent.MonitoringStopped("FileMonitor", previousPath));
             }
         }
     }
@@ -140,7 +149,12 @@ public class FileMonitor : IFileMonitor
             if (File.Exists(e.FullPath))
             {
                 var lines = fileReader.ReadLastLines(e.FullPath, lineCount);
-                OnFileChanged(FileChangeType.Modified, lines);
+                var linesList = lines.ToList();
+                
+                // Notify file change detected
+                diagnosticSubject?.Notify(DiagnosticEvent.FileChangeDetected("FileMonitor", e.FullPath, "Modified", linesList.Count));
+                
+                OnFileChanged(FileChangeType.Modified, linesList);
             }
         }
         catch (Exception ex)
@@ -162,7 +176,12 @@ public class FileMonitor : IFileMonitor
             if (File.Exists(e.FullPath))
             {
                 var lines = fileReader.ReadLastLines(e.FullPath, lineCount);
-                OnFileChanged(FileChangeType.Created, lines);
+                var linesList = lines.ToList();
+                
+                // Notify file change detected
+                diagnosticSubject?.Notify(DiagnosticEvent.FileChangeDetected("FileMonitor", e.FullPath, "Created", linesList.Count));
+                
+                OnFileChanged(FileChangeType.Created, linesList);
             }
         }
         catch (Exception ex)
@@ -176,6 +195,9 @@ public class FileMonitor : IFileMonitor
     /// </summary>
     private void OnFileDeleted(object sender, FileSystemEventArgs e)
     {
+        // Notify file change detected
+        diagnosticSubject?.Notify(DiagnosticEvent.FileChangeDetected("FileMonitor", e.FullPath, "Deleted", 0));
+        
         OnFileChanged(FileChangeType.Deleted, Array.Empty<IFileLine>());
     }
 

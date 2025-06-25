@@ -39,6 +39,13 @@ public static class ServiceCollectionExtensions
         // Register strategy selector
         services.AddScoped<FileReadingStrategySelector>();
 
+        // Register diagnostic services
+        services.AddSingleton<IDiagnosticSubject, DiagnosticSubject>();
+        
+        // Register diagnostic observers
+        services.AddScoped<PerformanceDiagnosticObserver>();
+        services.AddScoped<MonitoringDiagnosticObserver>();
+
         // Register the file reader service
         services.AddScoped<IFileReader, FileReader>();
         
@@ -70,6 +77,13 @@ public static class ServiceCollectionExtensions
         // Register strategy selector
         services.AddScoped<FileReadingStrategySelector>();
 
+        // Register diagnostic services
+        services.AddSingleton<IDiagnosticSubject, DiagnosticSubject>();
+        
+        // Register diagnostic observers
+        services.AddScoped<PerformanceDiagnosticObserver>();
+        services.AddScoped<MonitoringDiagnosticObserver>();
+
         // Register the file reader service
         services.AddScoped<IFileReader, FileReader>();
         
@@ -77,5 +91,40 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFileMonitor, FileMonitor>();
 
         return services;
+    }
+
+    /// <summary>
+    /// Configures diagnostic observers for file reading operations.
+    /// </summary>
+    /// <param name="serviceProvider">The service provider to get services from.</param>
+    /// <param name="enablePerformanceObserver">Whether to enable the performance diagnostic observer.</param>
+    /// <param name="enableMonitoringObserver">Whether to enable the monitoring diagnostic observer.</param>
+    /// <param name="enableConsoleOutput">Whether to enable console output for performance metrics.</param>
+    public static void ConfigureDiagnosticObservers(
+        this IServiceProvider serviceProvider,
+        bool enablePerformanceObserver = true,
+        bool enableMonitoringObserver = true,
+        bool enableConsoleOutput = true)
+    {
+        var diagnosticSubject = serviceProvider.GetService<IDiagnosticSubject>();
+        if (diagnosticSubject == null) return;
+
+        if (enablePerformanceObserver)
+        {
+            var performanceObserver = serviceProvider.GetService<PerformanceDiagnosticObserver>();
+            if (performanceObserver != null)
+            {
+                diagnosticSubject.Attach(performanceObserver);
+            }
+        }
+
+        if (enableMonitoringObserver)
+        {
+            var monitoringObserver = serviceProvider.GetService<MonitoringDiagnosticObserver>();
+            if (monitoringObserver != null)
+            {
+                diagnosticSubject.Attach(monitoringObserver);
+            }
+        }
     }
 } 

@@ -23,7 +23,6 @@ class Program
             {
                 services.AddFileReading(options =>
                 {
-                    options.EnablePerformanceLogging = true;
                     options.SmallFileThresholdBytes = 512 * 1024; // 512KB
                 });
                 services.AddLogging(builder => builder.AddConsole());
@@ -31,6 +30,12 @@ class Program
             .Build();
 
         IServiceProvider serviceProvider = host.Services;
+        
+        // Configure diagnostic observers
+        serviceProvider.ConfigureDiagnosticObservers(
+            enablePerformanceObserver: true,
+            enableMonitoringObserver: true,
+            enableConsoleOutput: true);
         ILogger<Program> logger = serviceProvider.GetRequiredService<ILogger<Program>>();
         IFileReader fileReader = serviceProvider.GetRequiredService<IFileReader>();
         IFileMonitor fileMonitor = serviceProvider.GetRequiredService<IFileMonitor>();

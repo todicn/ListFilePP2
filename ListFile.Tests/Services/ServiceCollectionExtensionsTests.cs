@@ -43,14 +43,12 @@ public class ServiceCollectionExtensionsTests
         services.AddFileReading(options =>
         {
             options.SmallFileThresholdBytes = expectedThreshold;
-            options.EnablePerformanceLogging = true;
         });
         var serviceProvider = services.BuildServiceProvider();
 
         // Assert
         var options = serviceProvider.GetRequiredService<IOptions<FileReaderOptions>>();
         Assert.Equal(expectedThreshold, options.Value.SmallFileThresholdBytes);
-        Assert.True(options.Value.EnablePerformanceLogging);
     }
 
     [Fact]
@@ -61,7 +59,6 @@ public class ServiceCollectionExtensionsTests
         var configurationData = new Dictionary<string, string?>
         {
             ["FileReader:SmallFileThresholdBytes"] = "1048576", // 1MB
-            ["FileReader:EnablePerformanceLogging"] = "true",
             ["FileReader:BufferSize"] = "8192"
         };
 
@@ -76,7 +73,6 @@ public class ServiceCollectionExtensionsTests
         // Assert
         var options = serviceProvider.GetRequiredService<IOptions<FileReaderOptions>>();
         Assert.Equal(1048576L, options.Value.SmallFileThresholdBytes);
-        Assert.True(options.Value.EnablePerformanceLogging);
         Assert.Equal(8192, options.Value.BufferSize);
     }
 
@@ -87,7 +83,7 @@ public class ServiceCollectionExtensionsTests
         var services = new ServiceCollection();
         var configurationData = new Dictionary<string, string?>
         {
-            ["CustomSection:EnablePerformanceLogging"] = "false"
+            ["CustomSection:SmallFileThresholdBytes"] = "2048"
         };
 
         var configuration = new ConfigurationBuilder()
@@ -100,7 +96,7 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         var options = serviceProvider.GetRequiredService<IOptions<FileReaderOptions>>();
-        Assert.False(options.Value.EnablePerformanceLogging);
+        Assert.Equal(2048L, options.Value.SmallFileThresholdBytes);
     }
 
     [Fact]

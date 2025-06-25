@@ -14,6 +14,7 @@ public class FileReader : IFileReader
 {
     private readonly FileReaderOptions options;
     private readonly FileReadingStrategySelector strategySelector;
+    private readonly IDiagnosticSubject? diagnosticSubject;
     private readonly object lockObject = new();
 
     /// <summary>
@@ -21,11 +22,13 @@ public class FileReader : IFileReader
     /// </summary>
     /// <param name="options">The configuration options for the file reader.</param>
     /// <param name="strategySelector">The strategy selector for choosing the appropriate reading strategy.</param>
+    /// <param name="diagnosticSubject">Optional diagnostic subject for observer notifications.</param>
     /// <exception cref="ArgumentNullException">Thrown when options or strategySelector is null.</exception>
-    public FileReader(IOptions<FileReaderOptions> options, FileReadingStrategySelector strategySelector)
+    public FileReader(IOptions<FileReaderOptions> options, FileReadingStrategySelector strategySelector, IDiagnosticSubject? diagnosticSubject = null)
     {
         this.options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         this.strategySelector = strategySelector ?? throw new ArgumentNullException(nameof(strategySelector));
+        this.diagnosticSubject = diagnosticSubject;
     }
 
     /// <summary>
@@ -87,26 +90,38 @@ public class FileReader : IFileReader
     /// <returns>The last N lines from the file.</returns>
     private IEnumerable<IFileLine> ReadLastLinesInternal(string filePath, int lineCount)
     {
-        Stopwatch? stopwatch = null;
-        if (options.EnablePerformanceLogging)
-        {
-            stopwatch = Stopwatch.StartNew();
-        }
+        var stopwatch = Stopwatch.StartNew();
+        
+        // Notify operation started
+        diagnosticSubject?.Notify(DiagnosticEvent.FileOperationStarted("FileReader", filePath, "ReadLastLines", lineCount));
 
         try
         {
             var fileInfo = new FileInfo(filePath);
             var strategy = strategySelector.SelectStrategy(fileInfo, options);
             
-            return strategy.ReadLastLines(filePath, lineCount, options);
+            // Notify strategy selected
+            diagnosticSubject?.Notify(DiagnosticEvent.StrategySelected("FileReader", strategy.GetType().Name, fileInfo.Length, options.SmallFileThresholdBytes));
+            
+            var result = strategy.ReadLastLines(filePath, lineCount, options);
+            var resultList = result.ToList(); // Materialize to get accurate count
+            
+            stopwatch.Stop();
+            
+            // Notify operation completed
+            diagnosticSubject?.Notify(DiagnosticEvent.FileOperationCompleted("FileReader", filePath, "ReadLastLines", 
+                stopwatch.ElapsedMilliseconds, resultList.Count, fileInfo.Length));
+            
+            return resultList;
         }
-        finally
+        catch (Exception ex)
         {
-            if (stopwatch != null && options.EnablePerformanceLogging)
-            {
-                stopwatch.Stop();
-                Console.WriteLine($"File reading completed in {stopwatch.ElapsedMilliseconds}ms");
-            }
+            stopwatch.Stop();
+            
+            // Notify operation failed
+            diagnosticSubject?.Notify(DiagnosticEvent.FileOperationFailed("FileReader", filePath, "ReadLastLines", ex));
+            
+            throw;
         }
     }
 
