@@ -53,7 +53,6 @@ var services = new ServiceCollection();
 // Register file reading services with custom options
 services.AddFileReading(options =>
 {
-    options.MaxFileSizeBytes = 100 * 1024 * 1024; // 100MB
     options.SmallFileThresholdBytes = 1024 * 1024; // 1MB
     options.EnablePerformanceLogging = true;
 });
@@ -72,10 +71,9 @@ The `FileReaderOptions` class provides several configuration options:
 ```csharp
 public class FileReaderOptions
 {
-    // Maximum file size that can be processed (default: 100MB)
-    public long MaxFileSizeBytes { get; set; } = 100 * 1024 * 1024;
-    
     // Threshold for small vs. large file processing (default: 1MB)
+    // Small files use File.ReadAllLines() which loads the entire file into memory.
+    // Large files use buffered backward reading which is memory efficient for any size.
     public long SmallFileThresholdBytes { get; set; } = 1024 * 1024;
     
     // Buffer size for reading large files (default: 4KB)
@@ -132,7 +130,7 @@ public interface IFileLine
 The library throws appropriate exceptions for various error conditions:
 
 - `ArgumentNullException`: When file path is null or empty
-- `ArgumentException`: When line count is less than 1 or file size exceeds limits
+- `ArgumentException`: When line count is less than 1
 - `FileNotFoundException`: When the specified file doesn't exist
 
 ## Thread Safety
@@ -159,7 +157,6 @@ var defaultLines = await fileReader.ReadLastLinesAsync("file.txt");
 ```json
 {
   "FileReader": {
-    "MaxFileSizeBytes": 52428800,
     "SmallFileThresholdBytes": 1048576,
     "EnablePerformanceLogging": true,
     "BufferSize": 8192

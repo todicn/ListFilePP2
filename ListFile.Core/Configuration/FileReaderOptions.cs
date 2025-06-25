@@ -16,12 +16,9 @@ public class FileReaderOptions
     public bool EnablePerformanceLogging { get; set; } = false;
 
     /// <summary>
-    /// Gets or sets the maximum file size in bytes that can be processed.
-    /// </summary>
-    public long MaxFileSizeBytes { get; set; } = 100 * 1024 * 1024; // 100MB
-
-    /// <summary>
     /// Gets or sets the threshold for small files (read all lines vs. read backwards).
+    /// Small files use File.ReadAllLines() which loads the entire file into memory.
+    /// Large files use buffered backward reading which is memory efficient for any size.
     /// </summary>
     public long SmallFileThresholdBytes { get; set; } = 1024 * 1024; // 1MB
 

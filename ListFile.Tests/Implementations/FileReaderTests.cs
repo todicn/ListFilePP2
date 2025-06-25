@@ -20,7 +20,6 @@ public class FileReaderTests : IDisposable
         var options = Options.Create(new FileReaderOptions
         {
             EnablePerformanceLogging = false,
-            MaxFileSizeBytes = 1024 * 1024, // 1MB for tests
             SmallFileThresholdBytes = 1024 // 1KB for tests
         });
         fileReader = new FileReader(options);

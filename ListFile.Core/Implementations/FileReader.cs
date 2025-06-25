@@ -93,12 +93,6 @@ public class FileReader : IFileReader
         {
             var fileInfo = new FileInfo(filePath);
             
-            // Check file size limit
-            if (fileInfo.Length > options.MaxFileSizeBytes)
-            {
-                throw new ArgumentException($"File size exceeds maximum allowed ({options.MaxFileSizeBytes} bytes).", nameof(filePath));
-            }
-
             // For small files, read all lines and take the last N
             if (fileInfo.Length <= options.SmallFileThresholdBytes)
             {
@@ -107,6 +101,7 @@ public class FileReader : IFileReader
             else
             {
                 // For large files, read from the end backwards
+                // This method is memory efficient and can handle files of any size
                 return ReadLargeFile(filePath, lineCount);
             }
         }

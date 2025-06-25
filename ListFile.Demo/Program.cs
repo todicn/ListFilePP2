@@ -24,7 +24,6 @@ class Program
                 services.AddFileReading(options =>
                 {
                     options.EnablePerformanceLogging = true;
-                    options.MaxFileSizeBytes = 50 * 1024 * 1024; // 50MB
                     options.SmallFileThresholdBytes = 512 * 1024; // 512KB
                 });
                 services.AddLogging(builder => builder.AddConsole());

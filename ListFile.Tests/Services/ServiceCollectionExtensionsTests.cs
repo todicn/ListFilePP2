@@ -37,13 +37,11 @@ public class ServiceCollectionExtensionsTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var expectedMaxFileSize = 5 * 1024 * 1024L; // 5MB
         var expectedThreshold = 512 * 1024L; // 512KB
 
         // Act
         services.AddFileReading(options =>
         {
-            options.MaxFileSizeBytes = expectedMaxFileSize;
             options.SmallFileThresholdBytes = expectedThreshold;
             options.EnablePerformanceLogging = true;
         });
@@ -51,7 +49,6 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         var options = serviceProvider.GetRequiredService<IOptions<FileReaderOptions>>();
-        Assert.Equal(expectedMaxFileSize, options.Value.MaxFileSizeBytes);
         Assert.Equal(expectedThreshold, options.Value.SmallFileThresholdBytes);
         Assert.True(options.Value.EnablePerformanceLogging);
     }
@@ -63,7 +60,6 @@ public class ServiceCollectionExtensionsTests
         var services = new ServiceCollection();
         var configurationData = new Dictionary<string, string?>
         {
-            ["FileReader:MaxFileSizeBytes"] = "10485760", // 10MB
             ["FileReader:SmallFileThresholdBytes"] = "1048576", // 1MB
             ["FileReader:EnablePerformanceLogging"] = "true",
             ["FileReader:BufferSize"] = "8192"
@@ -79,7 +75,6 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         var options = serviceProvider.GetRequiredService<IOptions<FileReaderOptions>>();
-        Assert.Equal(10485760L, options.Value.MaxFileSizeBytes);
         Assert.Equal(1048576L, options.Value.SmallFileThresholdBytes);
         Assert.True(options.Value.EnablePerformanceLogging);
         Assert.Equal(8192, options.Value.BufferSize);
@@ -92,7 +87,6 @@ public class ServiceCollectionExtensionsTests
         var services = new ServiceCollection();
         var configurationData = new Dictionary<string, string?>
         {
-            ["CustomSection:MaxFileSizeBytes"] = "20971520", // 20MB
             ["CustomSection:EnablePerformanceLogging"] = "false"
         };
 
@@ -106,7 +100,6 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         var options = serviceProvider.GetRequiredService<IOptions<FileReaderOptions>>();
-        Assert.Equal(20971520L, options.Value.MaxFileSizeBytes);
         Assert.False(options.Value.EnablePerformanceLogging);
     }
 
@@ -117,13 +110,13 @@ public class ServiceCollectionExtensionsTests
         var services = new ServiceCollection();
 
         // Act
-        services.AddFileReading(options => options.MaxFileSizeBytes = 1024);
-        services.AddFileReading(options => options.MaxFileSizeBytes = 2048);
+        services.AddFileReading(options => options.SmallFileThresholdBytes = 1024);
+        services.AddFileReading(options => options.SmallFileThresholdBytes = 2048);
         var serviceProvider = services.BuildServiceProvider();
 
         // Assert
         var options = serviceProvider.GetRequiredService<IOptions<FileReaderOptions>>();
-        Assert.Equal(2048L, options.Value.MaxFileSizeBytes);
+        Assert.Equal(2048L, options.Value.SmallFileThresholdBytes);
     }
 
     [Fact]
