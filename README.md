@@ -5,10 +5,12 @@ A high-performance .NET 8 library for reading the last N lines from files effici
 ## Features
 
 - **Efficient File Reading**: Optimized algorithms for reading the last N lines from files
-- **Performance Optimized**: Different strategies for small vs. large files
+- **File Monitoring**: Real-time monitoring of file changes with automatic line reading
+- **Performance Optimized**: Different strategies for small vs. large files using Strategy pattern
 - **Thread-Safe**: Safe for concurrent access
 - **Configurable**: Flexible options for file size thresholds and buffer sizes
 - **Async Support**: Both synchronous and asynchronous APIs
+- **Event-Driven**: File change notifications with detailed event information
 - **Dependency Injection**: Built-in support for Microsoft.Extensions.DependencyInjection
 - **Well-Tested**: Comprehensive unit tests with edge case coverage
 
@@ -59,9 +61,41 @@ services.AddFileReading(options =>
 
 var serviceProvider = services.BuildServiceProvider();
 var fileReader = serviceProvider.GetRequiredService<IFileReader>();
+var fileMonitor = serviceProvider.GetRequiredService<IFileMonitor>();
 
 // Read last 5 lines
 var result = await fileReader.ReadLastLinesAsync("largefile.txt", 5);
+```
+
+### File Monitoring
+
+```csharp
+using ListFile.Core.Interfaces;
+
+// Get the file monitor from DI
+var fileMonitor = serviceProvider.GetRequiredService<IFileMonitor>();
+
+// Set up event handler
+fileMonitor.FileChanged += (sender, args) =>
+{
+    Console.WriteLine($"File {args.FilePath} changed at {args.Timestamp}");
+    Console.WriteLine($"Change type: {args.ChangeType}");
+    Console.WriteLine($"Lines read: {args.Lines.Count()}");
+    
+    foreach (var line in args.Lines)
+    {
+        Console.WriteLine($"  {line.LineNumber}: {line.Content}");
+    }
+};
+
+// Start monitoring a file (reads last 10 lines on changes)
+fileMonitor.StartMonitoring("logfile.txt", 10);
+
+// Stop monitoring
+fileMonitor.StopMonitoring();
+
+// Don't forget to dispose
+fileMonitor.Dispose();
 ```
 
 ## Configuration Options
@@ -115,6 +149,47 @@ public interface IFileReader
 }
 ```
 
+### IFileMonitor Interface
+
+```csharp
+public interface IFileMonitor : IDisposable
+{
+    // Event raised when monitored file changes
+    event EventHandler<FileChangedEventArgs> FileChanged;
+    
+    // Start monitoring a file for changes
+    void StartMonitoring(string filePath, int lineCount = 10);
+    
+    // Stop monitoring the current file
+    void StopMonitoring();
+    
+    // Check if currently monitoring
+    bool IsMonitoring { get; }
+    
+    // Get the path of the monitored file
+    string? MonitoredFilePath { get; }
+}
+```
+
+### FileChangedEventArgs Class
+
+```csharp
+public class FileChangedEventArgs : EventArgs
+{
+    public string FilePath { get; }           // Path of the changed file
+    public IEnumerable<IFileLine> Lines { get; } // Lines read after change
+    public FileChangeType ChangeType { get; }    // Type of change (Modified, Created, Deleted)
+    public DateTime Timestamp { get; }           // When the change was detected
+}
+
+public enum FileChangeType
+{
+    Modified,  // File content was modified
+    Created,   // File was created
+    Deleted    // File was deleted
+}
+```
+
 ### IFileLine Interface
 
 ```csharp
@@ -150,6 +225,31 @@ var last20 = await fileReader.ReadLastLinesAsync("file.txt", 20);
 
 // Default behavior (last 10 lines)
 var defaultLines = await fileReader.ReadLastLinesAsync("file.txt");
+```
+
+### Real-time Log Monitoring
+
+```csharp
+using var fileMonitor = serviceProvider.GetRequiredService<IFileMonitor>();
+
+fileMonitor.FileChanged += (sender, args) =>
+{
+    if (args.ChangeType == FileChangeType.Modified)
+    {
+        Console.WriteLine($"[{args.Timestamp:HH:mm:ss}] Log file updated:");
+        foreach (var line in args.Lines.TakeLast(3)) // Show last 3 lines
+        {
+            Console.WriteLine($"  {line.Content}");
+        }
+    }
+};
+
+// Monitor application log file
+fileMonitor.StartMonitoring("app.log", 10);
+
+// Keep monitoring until application stops
+Console.WriteLine("Monitoring app.log for changes. Press any key to stop...");
+Console.ReadKey();
 ```
 
 ### Configuration from appsettings.json

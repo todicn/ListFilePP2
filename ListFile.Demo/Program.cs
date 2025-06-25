@@ -33,6 +33,7 @@ class Program
         IServiceProvider serviceProvider = host.Services;
         ILogger<Program> logger = serviceProvider.GetRequiredService<ILogger<Program>>();
         IFileReader fileReader = serviceProvider.GetRequiredService<IFileReader>();
+        IFileMonitor fileMonitor = serviceProvider.GetRequiredService<IFileMonitor>();
 
         try
         {
@@ -50,7 +51,10 @@ class Program
             // Demo 3: Edge cases
             await DemoEdgeCases(fileReader);
 
-            // Demo 4: Large file performance
+            // Demo 4: File monitoring
+            await DemoFileMonitoring(fileMonitor);
+
+            // Demo 5: Large file performance
             await DemoLargeFilePerformance(fileReader);
 
             logger.LogInformation("All demonstrations completed successfully");
@@ -68,7 +72,15 @@ class Program
 
         Console.WriteLine();
         Console.WriteLine("Press any key to exit...");
-        Console.ReadKey();
+        try
+        {
+            Console.ReadKey();
+        }
+        catch (InvalidOperationException)
+        {
+            // Handle case where console input is redirected
+            Console.WriteLine("Demo completed.");
+        }
     }
 
     /// <summary>
@@ -229,11 +241,118 @@ class Program
     }
 
     /// <summary>
+    /// Demonstrates file monitoring functionality.
+    /// </summary>
+    private static async Task DemoFileMonitoring(IFileMonitor fileMonitor)
+    {
+        Console.WriteLine("=== Demo 4: File Monitoring ===");
+        Console.WriteLine("Monitoring a file for changes and reading last 10 lines when modified...");
+
+        // Create a file to monitor
+        string monitoredFile = "monitored_file.txt";
+        await File.WriteAllTextAsync(monitoredFile, "Initial content\nLine 2\nLine 3\n");
+
+        // Set up event handler
+        var eventReceived = new TaskCompletionSource<bool>();
+        var eventCount = 0;
+
+        fileMonitor.FileChanged += (sender, args) =>
+        {
+            eventCount++;
+            Console.WriteLine($"\n--- File Change Detected #{eventCount} ---");
+            Console.WriteLine($"File: {args.FilePath}");
+            Console.WriteLine($"Change Type: {args.ChangeType}");
+            Console.WriteLine($"Timestamp: {args.Timestamp:HH:mm:ss.fff}");
+            Console.WriteLine($"Lines read: {args.Lines.Count()}");
+            
+            foreach (var line in args.Lines.Take(5)) // Show first 5 lines to avoid clutter
+            {
+                Console.WriteLine($"  {line.LineNumber}: {line.Content}");
+            }
+            
+            if (args.Lines.Count() > 5)
+            {
+                Console.WriteLine($"  ... and {args.Lines.Count() - 5} more lines");
+            }
+            
+            Console.WriteLine("--- End of Change Event ---\n");
+
+            if (eventCount >= 3) // Stop after 3 events
+            {
+                eventReceived.TrySetResult(true);
+            }
+        };
+
+        try
+        {
+            // Start monitoring
+            fileMonitor.StartMonitoring(monitoredFile, 10);
+            Console.WriteLine($"Started monitoring: {monitoredFile}");
+            Console.WriteLine("Making changes to the file...\n");
+
+            // Make some changes to trigger events
+            await Task.Delay(500); // Give monitor time to start
+
+            // Change 1: Append content
+            Console.WriteLine("Change 1: Appending new lines...");
+            await File.AppendAllTextAsync(monitoredFile, "New line 4\nNew line 5\nNew line 6\n");
+            await Task.Delay(300);
+
+            // Change 2: Append more content
+            Console.WriteLine("Change 2: Appending more content...");
+            await File.AppendAllTextAsync(monitoredFile, "Additional line 7\nAdditional line 8\nAdditional line 9\nAdditional line 10\n");
+            await Task.Delay(300);
+
+            // Change 3: Overwrite file
+            Console.WriteLine("Change 3: Overwriting file content...");
+            await File.WriteAllTextAsync(monitoredFile, "Completely new content\nLine A\nLine B\nLine C\nLine D\nLine E\nLine F\nLine G\nLine H\nLine I\nLine J\n");
+
+            // Wait for events or timeout
+            var timeoutTask = Task.Delay(3000);
+            var completedTask = await Task.WhenAny(eventReceived.Task, timeoutTask);
+
+            if (completedTask == timeoutTask)
+            {
+                Console.WriteLine("Timeout waiting for file change events.");
+            }
+            else
+            {
+                Console.WriteLine("File monitoring demonstration completed successfully!");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error during file monitoring: {ex.Message}");
+        }
+        finally
+        {
+            // Stop monitoring
+            fileMonitor.StopMonitoring();
+            Console.WriteLine("Stopped file monitoring.");
+            
+            // Clean up the monitored file
+            try
+            {
+                if (File.Exists(monitoredFile))
+                {
+                    File.Delete(monitoredFile);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Warning: Could not delete {monitoredFile}: {ex.Message}");
+            }
+        }
+
+        Console.WriteLine();
+    }
+
+    /// <summary>
     /// Demonstrates performance with a large file.
     /// </summary>
     private static async Task DemoLargeFilePerformance(IFileReader fileReader)
     {
-        Console.WriteLine("=== Demo 4: Large File Performance ===");
+        Console.WriteLine("=== Demo 5: Large File Performance ===");
         Console.WriteLine("Reading the last 10 lines from sample_large.txt (10,000 lines):");
 
         try
@@ -268,7 +387,8 @@ class Program
             "sample_medium.txt", 
             "sample_large.txt",
             "empty.txt",
-            "single_line.txt"
+            "single_line.txt",
+            "monitored_file.txt"
         };
 
         foreach (string file in filesToDelete)

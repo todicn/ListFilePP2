@@ -41,6 +41,9 @@ public static class ServiceCollectionExtensions
 
         // Register the file reader service
         services.AddScoped<IFileReader, FileReader>();
+        
+        // Register the file monitor service
+        services.AddScoped<IFileMonitor, FileMonitor>();
 
         return services;
     }
@@ -69,6 +72,9 @@ public static class ServiceCollectionExtensions
 
         // Register the file reader service
         services.AddScoped<IFileReader, FileReader>();
+        
+        // Register the file monitor service
+        services.AddScoped<IFileMonitor, FileMonitor>();
 
         return services;
     }
