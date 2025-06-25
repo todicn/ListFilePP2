@@ -2,11 +2,11 @@
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ListFile.Core", "MergeIntervals.Core\MergeIntervals.Core.csproj", "{8B9A3D7E-1F2C-4A3D-B9E6-7F5A8C2E1B9D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ListFile.Core", "ListFile.Core\ListFile.Core.csproj", "{8B9A3D7E-1F2C-4A3D-B9E6-7F5A8C2E1B9D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ListFile.Demo", "MergeIntervals.Demo\MergeIntervals.Demo.csproj", "{2F7E4A5B-8C1D-4E9F-A6B3-9D8E5F2A7C1B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ListFile.Demo", "ListFile.Demo\ListFile.Demo.csproj", "{2F7E4A5B-8C1D-4E9F-A6B3-9D8E5F2A7C1B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ListFile.Tests", "MergeIntervals.Tests\MergeIntervals.Tests.csproj", "{5D8A9B2C-3E4F-4A5B-C9D7-1F6A8E3B2C9E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ListFile.Tests", "ListFile.Tests\ListFile.Tests.csproj", "{5D8A9B2C-3E4F-4A5B-C9D7-1F6A8E3B2C9E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

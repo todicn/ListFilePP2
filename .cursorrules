@@ -1,7 +1,7 @@
-# Cursor Rules for RateLimiter Project
+# Cursor Rules for ListFile Project
 
 ## Project Context
-
+This is a high-performance .NET 8 library for reading the last N lines from files efficiently. The library provides optimized algorithms for both small and large files with thread-safe operations.
 
 ## Code Style & Standards
 - Follow C# naming conventions (PascalCase for classes/methods, camelCase for fields)
@@ -24,7 +24,7 @@
 ## Performance Considerations
 - All implementations must be thread-safe
 - Minimize memory allocations in hot paths
-- Consider using Stopwatch for high-precision timing
+- Consider using different strategies for small vs large files
 - Profile memory usage for long-running scenarios
 
 ## Error Handling
@@ -38,7 +38,6 @@
 - Tag commits with relevant issue numbers when applicable
 - Maintain clean commit history with logical groupings
 
-
 ## Code Review Checklist
 - [ ] Thread safety verified with lock analysis
 - [ ] Unit tests cover happy path and edge cases
@@ -49,7 +48,6 @@
 
 ## Preferred Libraries
 - Microsoft.Extensions.* for DI, configuration, and options
-- StackExchange.Redis for distributed scenarios
 - xUnit for testing framework
 - System.Diagnostics.Stopwatch for timing
 - Implement core functionality from scratch
